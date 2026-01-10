@@ -9,4 +9,4 @@ helped in understanding :
 - Zod package
 - Shadcn library
 
-learnt from : CHAI AUR CODE
+credits : Chai Aur Code
