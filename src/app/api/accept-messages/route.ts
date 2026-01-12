@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
   try {
     const session = await getServerSession(authOptions);
-    console.log("Session : ", session);
+
     const user: User = session?.user as User;
 
     if (!session || !session.user) {

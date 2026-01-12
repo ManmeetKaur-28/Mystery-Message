@@ -1,7 +1,7 @@
 "use client";
 import { acceptMessagesValidation } from "@/schemas/acceptMessageSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { User } from "next-auth";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -14,11 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import MessageCard from "@/components/MessageCard";
 import { Message } from "@/models/UserModel";
+import * as z from "zod";
+import { ApiRespone } from "@/types/ApiResponse";
 const Dashboard = () => {
   const { data: session } = useSession();
   const user: User = session?.user as User;
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof acceptMessagesValidation>>({
     resolver: zodResolver(acceptMessagesValidation),
   });
   const { register, setValue, watch } = form;
@@ -43,6 +45,9 @@ const Dashboard = () => {
       const response = await axios.post("/api/accept-messages", {
         acceptingMessages: !isAcceptingMessages,
       });
+      toast.success(
+        `Message accepting status turned ${isAcceptingMessages ? "OFF" : "ON"} `
+      );
       setValue("isAcceptingMessages", !isAcceptingMessages);
     } catch (error) {
       console.log("error in changing message accepting status :: ", error);
@@ -53,29 +58,35 @@ const Dashboard = () => {
     setIsLoadingMessages(true);
     try {
       const response = await axios.get("/api/get-messages");
-      setMessages(response.data.messages);
+      setMessages(response.data.messages || []);
+      // console.log(response);
     } catch (error: any) {
       console.log("Error occured while fetching user messages :: ", error);
-      toast.error(error.response.data.message);
+      const axiosError = error as AxiosError<ApiRespone>;
+      toast.error(axiosError.response?.data.message);
     }
     setIsLoadingMessages(false);
   };
 
   useEffect(() => {
     if (!session || !session.user) return;
-    getAcceptingStatus();
     getMessages();
-  }, []);
+    getAcceptingStatus();
+  }, [session]);
 
-  const handleMessageDelete = (messageId: any) => {
-    setMessages(messages.filter((message) => message._id != messageId));
+  const handleMessageDelete = (messageId: string) => {
+    setMessages(
+      messages.filter((message) => message._id.toString() != messageId)
+    );
   };
-
-  const ProfileUrl = `${window.location.origin}/u/${user?.username}`;
+  let profileUrl = "";
+  if (typeof window != undefined) {
+    profileUrl = `${window?.location.origin}/u/${user?.username}`; //change this url ---------------------
+  }
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(ProfileUrl);
-    toast.success("Profile Url successfully copied to clipboard");
+    navigator.clipboard.writeText(profileUrl);
+    toast.success("Url successfully copied to clipboard");
   };
 
   if (!session || !session.user) {
@@ -91,7 +102,7 @@ const Dashboard = () => {
       <div>
         <h2>Profile Url</h2>
         <div className="flex space-x-5 w-full">
-          <Input disabled={true} value={ProfileUrl} />
+          <Input disabled={true} value={profileUrl} />
           <Button onClick={copyToClipboard}>Copy</Button>
         </div>
       </div>
@@ -106,13 +117,14 @@ const Dashboard = () => {
         <span>{isAcceptingMessages ? "ON" : "OFF"}</span>
       </div>
 
-      <div className="bg-gray-600/30 p-4 rounded-xl space-y-2">
+      <div className="bg-gray-600/30 text-center p-4 rounded-xl space-y-2 flex-col flex w-full ">
         <h2 className="text-3xl text-center font-bold">ALL MESSAGES</h2>
         <Separator />
-        <div>
+        <div className=" grid grid-cols-1 sm:grid-cols-2 mx-auto lg:gap-4 gap-2  lg:grid-cols-3 xl:grid-cols-4">
           {messages.length > 0 ? (
             messages.map((message) => (
               <MessageCard
+                key={message._id.toString()}
                 message={message}
                 handleMessageDelete={handleMessageDelete}
               />

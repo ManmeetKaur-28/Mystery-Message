@@ -9,6 +9,7 @@ export async function GET(request: Request) {
   dbConnect();
   try {
     const session = await getServerSession(authOptions);
+    // console.log("session : ", session);
     const user: User = session?.user as User;
     if (!session || !session.user) {
       return Response.json(
@@ -34,6 +35,8 @@ export async function GET(request: Request) {
         $group: { _id: `$_id`, messages: { $push: "$messages" } },
       },
     ]);
+
+    // console.log("user from pipeline : ", userFromPipeline);
 
     if (!userFromPipeline || userFromPipeline.length == 0) {
       return Response.json(

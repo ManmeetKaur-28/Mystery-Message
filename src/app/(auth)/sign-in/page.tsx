@@ -44,7 +44,7 @@ function SigninPage() {
         password: data.password,
       }
     );
-    console.log("Result of backend signin auth : ", result);
+    // console.log("Result of backend signin auth : ", result);
     if (result?.error) {
       toast.error("Login failed . Incorrect usrname ot password");
     }
